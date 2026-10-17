@@ -2,6 +2,7 @@
   "name": "matsmart-watcher",
   "version": "0.2.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "description": "Watches matsmart.se for products, stores their state, sends Discord alerts on changes. Express, EJS and SQLite in one Docker image.",
   "main": "src/server.js",
   "scripts": {

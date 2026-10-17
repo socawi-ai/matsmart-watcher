@@ -96,3 +96,8 @@ npm test               # node --test
 ```
 
 The parser tests run against pages saved from matsmart.se in `evidence/`.
+
+## License
+
+[AGPL-3.0-or-later](LICENSE). If you run a modified version for others over a
+network, you must offer them its source.
