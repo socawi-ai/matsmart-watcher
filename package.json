@@ -1,6 +1,6 @@
 {
   "name": "matsmart-watcher",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Watches matsmart.se for products, stores their state, sends Discord alerts on changes. Express, EJS and SQLite in one Docker image.",
   "main": "src/server.js",
