@@ -43,8 +43,11 @@ Agreed after Phase 0 (2026-10-17):
 - Scheduler is a plain `setInterval` with a guard against overlapping runs.
 - Interface, flash and log messages in Swedish; code and comments in English.
 - Tests: `node:test` + `node:assert/strict` in `test/`.
-- Docker: Dockerfile like small cms; compose builds locally (`build: .`), no GHCR
-  workflow, no changelog machinery.
+- Docker: Dockerfile like small cms. `.github/workflows/docker-publish.yml` (from
+  small cms, without its release/changelog steps) builds, smoke-tests, Trivy-scans
+  and publishes `ghcr.io/socawi-ai/matsmart-watcher` on pushes to `main` (`latest`,
+  `sha-…`) and `v*` tags; compose pulls that image (owner's request, 2026-10-17).
+  The repo is private, so pulling needs `docker login ghcr.io`.
 
 ## Responsibilities (keep these separate)
 - Fetching pages (HTTP only)

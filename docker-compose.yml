@@ -1,7 +1,8 @@
 services:
   matsmart-watcher:
-    build: .
-    image: matsmart-watcher
+    # Built and published by .github/workflows/docker-publish.yml. MATSMART_WATCHER_VERSION
+    # pins a version (e.g. v0.2.0); the default follows main.
+    image: ghcr.io/socawi-ai/matsmart-watcher:${MATSMART_WATCHER_VERSION:-latest}
     container_name: matsmart-watcher
     restart: unless-stopped
     ports:

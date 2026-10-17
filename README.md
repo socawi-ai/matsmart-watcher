@@ -33,10 +33,21 @@ Discord when something changes. One Docker container, one SQLite file.
 
 ## Run with Docker
 
+Every push to `main` builds the image on GitHub and publishes it as
+`ghcr.io/socawi-ai/matsmart-watcher:latest`; a `v*` tag (e.g. `v0.2.0`) also
+publishes that version. The repository is private, so the image is too: log in
+once on each Docker server with a GitHub token that has `read:packages`:
+
+```bash
+echo <token> | docker login ghcr.io -u socawi-ai --password-stdin
+```
+
+Then, next to `docker-compose.yml` and a `.env`:
+
 ```bash
 cp .env.example .env
 # Fill in SESSION_SECRET, DISCORD_WEBHOOK_URL and DEFAULT_ADMIN_PASSWORD.
-docker compose up -d --build
+docker compose up -d
 ```
 
 Open http://localhost:3000 and log in with `DEFAULT_ADMIN_USERNAME` /
@@ -44,7 +55,9 @@ Open http://localhost:3000 and log in with `DEFAULT_ADMIN_USERNAME` /
 those variables later does nothing. Data (accounts, watches, products, history)
 is in `./data/app.sqlite`, kept between restarts and image upgrades.
 
-To update: `git pull && docker compose up -d --build`.
+To update: `docker compose pull && docker compose up -d`. To pin a version, set
+`MATSMART_WATCHER_VERSION=v0.2.0` in `.env`. To build locally instead:
+`docker build -t ghcr.io/socawi-ai/matsmart-watcher:latest .`
 
 ### Behind a reverse proxy (HTTPS)
 
