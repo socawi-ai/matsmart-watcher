@@ -9,8 +9,7 @@ site it watches).
 
 > **Unofficial.** Not affiliated with or endorsed by Matsmart/Motatos. It reads the
 > same pages and product data the site's own pages load, so it can break whenever the
-> site changes. matsmart.se's product list API (`api.motatos.se`) is disallowed for
-> robots in its robots.txt; this app uses it to see whole lists. Use it for yourself,
+> site changes. Use it for yourself,
 > keep the check interval reasonable, and decide for yourself whether that's
 > acceptable to you.
 
@@ -105,17 +104,10 @@ with a message naming it (see `docker compose logs`).
   - Point the proxy at it.
   - Set `COOKIE_SECURE=true` so the login cookie is only sent over HTTPS.
     `TRUST_PROXY` then defaults to one proxy hop.
-- **Building the image yourself:** clone the repository and build it. Compose then
-  runs your build.
-
-  ```bash
-  git clone https://github.com/socawi-ai/matsmart-watcher.git && cd matsmart-watcher
-  docker build -t ghcr.io/socawi-ai/matsmart-watcher:latest .
-  ```
-
-  The workflow in `.github/workflows/docker-publish.yml` builds and publishes the
-  image on every push to `main` and every `v*` tag. In a fork, it publishes to your
-  own GHCR.
+- **Prebuilt image:** pushes to `main` here publish
+  `ghcr.io/socawi-ai/matsmart-watcher` (`latest`, and `v*` tags such as `v0.2.0`).
+  It isn't public, so build your own as above. The workflow in
+  `.github/workflows/docker-publish.yml` publishes to your own GHCR if you fork.
 
 ## Configuration
 
