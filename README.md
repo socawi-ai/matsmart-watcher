@@ -52,13 +52,14 @@ The web interface (login required) has four pages:
 ## Quick start
 
 You need Docker (with Compose) and a Discord channel where you can add a webhook.
+The image is published as `ghcr.io/socawi-ai/matsmart-watcher`.
 
-1. **Get the code and build the image.**
+1. **Get the Compose file and the settings template** into a new folder.
 
    ```bash
-   git clone https://github.com/socawi-ai/matsmart-watcher.git
-   cd matsmart-watcher
-   docker build -t ghcr.io/socawi-ai/matsmart-watcher:latest .
+   mkdir matsmart-watcher && cd matsmart-watcher
+   curl -fsSLO https://raw.githubusercontent.com/socawi-ai/matsmart-watcher/main/docker-compose.yml
+   curl -fsSL https://raw.githubusercontent.com/socawi-ai/matsmart-watcher/main/.env.example -o .env.example
    ```
 
 2. **Create a Discord webhook.** In Discord: the channel's settings → Integrations →
@@ -81,7 +82,7 @@ You need Docker (with Compose) and a Discord channel where you can add a webhook
    docker compose up -d
    ```
 
-   Open http://localhost:3000 and log in as `admin` (or your
+   This pulls the image and starts the app. Open http://localhost:3000 and log in as `admin` (or your
    `DEFAULT_ADMIN_USERNAME`) with your password. Add a watch, press **Kontrollera
    nu**, and what it finds arrives in Discord as **Ny**.
 
@@ -94,18 +95,27 @@ with a message naming it (see `docker compose logs`).
 - **Data:** accounts, watches, products, history and settings are in
   `./data/app.sqlite`, kept across restarts and upgrades. Back up that file to keep
   them.
-- **Updating:** `git pull`, build the image again (step 1), then
-  `docker compose up -d`.
+- **Updating:** `docker compose pull && docker compose up -d`.
+- **Versions:** `latest` follows the `main` branch. Every release is also published
+  under its version (e.g. `v0.2.0`). To stay on one, set
+  `MATSMART_WATCHER_VERSION=v0.2.0` in `.env`.
 - **Behind a reverse proxy (HTTPS):**
   - Publish the port on localhost only: `"127.0.0.1:3000:3000"` in
     `docker-compose.yml`.
   - Point the proxy at it.
   - Set `COOKIE_SECURE=true` so the login cookie is only sent over HTTPS.
     `TRUST_PROXY` then defaults to one proxy hop.
-- **Prebuilt image:** pushes to `main` here publish
-  `ghcr.io/socawi-ai/matsmart-watcher` (`latest`, and `v*` tags such as `v0.2.0`).
-  It isn't public, so build your own as above. The workflow in
-  `.github/workflows/docker-publish.yml` publishes to your own GHCR if you fork.
+- **Building the image yourself:** clone the repository and build it. Compose then
+  runs your build.
+
+  ```bash
+  git clone https://github.com/socawi-ai/matsmart-watcher.git && cd matsmart-watcher
+  docker build -t ghcr.io/socawi-ai/matsmart-watcher:latest .
+  ```
+
+  The workflow in `.github/workflows/docker-publish.yml` builds and publishes the
+  image on every push to `main` and every `v*` tag. In a fork, it publishes to your
+  own GHCR.
 
 ## Configuration
 
