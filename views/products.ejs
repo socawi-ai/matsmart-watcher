@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+<%- include('partials/head', { title: 'Produkter' }) %>
+  </head>
+  <body>
+    <main class="page">
+<%- include('partials/top') %>
+
+      <section class="card">
+        <h2>I lager just nu (<%= products.length %>)</h2>
+        <p class="sort">
+          Sortera:
+          <% [['discount', 'Rabatt'], ['price', 'Pris'], ['best_before', 'Bäst före'], ['name', 'Namn']].forEach(function ([key, label]) { %>
+            <a href="/products?sort=<%= key %>" class="<%= sort === key ? 'active' : '' %>"><%= label %></a>
+          <% }) %>
+        </p>
+        <% if (!products.length) { %>
+          <p class="muted">Inga produkter i lager bland bevakningarna.</p>
+        <% } else { %>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th></th><th>Produkt</th><th>Pris</th><th>Ord. pris</th><th>Rabatt</th><th>Bäst före</th><th>Lager</th></tr>
+              </thead>
+              <tbody>
+                <% products.forEach(function (product) { %>
+                  <tr>
+                    <td class="thumb"><% if (product.image) { %><img src="<%= product.image %>" alt="" loading="lazy" /><% } %></td>
+                    <td>
+                      <a href="<%= product.url %>" rel="noopener noreferrer" target="_blank"><%= product.title %></a>
+                      <div class="muted"><%= product.brand %></div>
+                    </td>
+                    <td class="nowrap"><strong><%= format.kr(product.price) %></strong></td>
+                    <td class="nowrap muted"><%= format.kr(product.originalPrice) %></td>
+                    <td class="nowrap"><%= format.discountPercent(product) %> %</td>
+                    <td class="nowrap"><%= product.bestBefore || '–' %></td>
+                    <td class="nowrap"><%= format.stockNote(product) %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

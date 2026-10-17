@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+<%- include('partials/head', { title: 'Historik' }) %>
+  </head>
+  <body>
+    <main class="page">
+<%- include('partials/top') %>
+
+      <section class="card">
+        <h2>Senaste förändringarna</h2>
+        <p class="muted">De <%= shown %> senaste.</p>
+        <% if (!changes.length) { %>
+          <p class="muted">Inga förändringar än.</p>
+        <% } else { %>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Tid</th><th>Förändring</th><th>Produkt</th><th>Pris</th></tr>
+              </thead>
+              <tbody>
+                <% changes.forEach(function (change) { %>
+                  <tr>
+                    <td class="nowrap"><%= format.time(change.created_at) %></td>
+                    <td class="nowrap"><span class="tag tag-<%= change.type %>"><%= format.CHANGE_LABELS[change.type] %></span></td>
+                    <td>
+                      <a href="<%= change.url %>" rel="noopener noreferrer" target="_blank"><%= change.title %></a>
+                      <div class="muted"><%= change.brand %></div>
+                    </td>
+                    <td class="nowrap"><%= format.priceChange(change.old_price, change.new_price) %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

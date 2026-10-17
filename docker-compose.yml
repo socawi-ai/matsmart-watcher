@@ -1,0 +1,28 @@
+services:
+  matsmart-watcher:
+    build: .
+    image: matsmart-watcher
+    container_name: matsmart-watcher
+    restart: unless-stopped
+    ports:
+      # Behind a reverse proxy on the same machine, publish on localhost only
+      # ("127.0.0.1:3000:3000"), so nobody can reach the app around it.
+      - "3000:3000"
+    environment:
+      TZ: ${TZ:-Europe/Stockholm}
+      PORT: 3000
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:?set DISCORD_WEBHOOK_URL in .env}
+      CHECK_INTERVAL_MINUTES: ${CHECK_INTERVAL_MINUTES:-30}
+      DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

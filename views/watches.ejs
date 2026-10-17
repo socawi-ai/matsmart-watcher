@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+<%- include('partials/head', { title: 'Bevakningar' }) %>
+  </head>
+  <body>
+    <main class="page">
+<%- include('partials/top') %>
+
+      <section class="card">
+        <h2>Lägg till bevakning</h2>
+        <form method="post" action="/watches" class="form add-form">
+          <div>
+            <label for="url">Adress på matsmart.se</label>
+            <input id="url" name="url" type="text" required maxlength="<%= limits.url %>"
+              placeholder="https://www.matsmart.se/kategori/proteinbars" />
+          </div>
+          <div>
+            <label for="keyword">Nyckelord (valfritt)</label>
+            <input id="keyword" name="keyword" type="text" maxlength="<%= limits.keyword %>" placeholder="lakrits" />
+          </div>
+          <button type="submit" class="button">Lägg till</button>
+        </form>
+        <p class="muted">
+          En produkt-, kategori-, varumärkes- eller listsida (t.ex. /sista-chansen). Med ett nyckelord
+          bevakas bara produkter vars namn eller varumärke innehåller det. Produkterna från en ny
+          bevaknings första kontroll räknas inte som nya.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Bevakningar</h2>
+        <% if (!watches.length) { %>
+          <p class="muted">Inga bevakningar än.</p>
+        <% } else { %>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Sida</th><th>Nyckelord</th><th>Produkter</th><th>Senast kontrollerad</th><th></th></tr>
+              </thead>
+              <tbody>
+                <% watches.forEach(function (watch) { %>
+                  <tr>
+                    <td><a href="https://www.matsmart.se<%= watch.path %>" rel="noopener noreferrer" target="_blank"><%= watch.path %></a></td>
+                    <td><%= watch.keyword || '–' %></td>
+                    <td><%= watch.product_count %></td>
+                    <td>
+                      <%= watch.checked_at ? format.time(watch.checked_at) : 'Aldrig' %>
+                      <% if (watch.error) { %><br /><span class="error-text">Fel: <%= watch.error %></span><% } %>
+                    </td>
+                    <td class="cell-end">
+                      <form method="post" action="/watches/<%= watch.id %>/delete">
+                        <button type="submit" class="button danger">Ta bort</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

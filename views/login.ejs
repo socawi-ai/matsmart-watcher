@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+<%- include('partials/head', { title: 'Logga in' }) %>
+  </head>
+  <body>
+    <main class="page narrow">
+      <h1><%= appName %></h1>
+      <section class="card">
+        <h2>Logga in</h2>
+
+        <% if (error) { %>
+          <p class="message error"><%= error %></p>
+        <% } %>
+
+        <form method="post" action="/auth/login" class="form">
+          <label for="username">Användarnamn</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+
+          <label for="password">Lösenord</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <button type="submit" class="button">Logga in</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

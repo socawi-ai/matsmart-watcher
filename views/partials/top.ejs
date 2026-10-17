@@ -1,0 +1,38 @@
+<%# Header of every logged-in page: navigation, check status, "Kontrollera nu", flash. %>
+<header class="top">
+  <div class="top-row">
+    <strong class="brand"><%= appName %></strong>
+    <nav class="nav">
+      <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Bevakningar</a>
+      <a href="/products" class="<%= currentPath === '/products' ? 'active' : '' %>">Produkter</a>
+      <a href="/history" class="<%= currentPath === '/history' ? 'active' : '' %>">Historik</a>
+    </nav>
+    <div class="actions">
+      <form method="post" action="/check">
+        <input type="hidden" name="back" value="<%= currentPath %>" />
+        <button type="submit" class="button" <%= checkStatus.running ? 'disabled' : '' %>>Kontrollera nu</button>
+      </form>
+      <form method="post" action="/auth/logout">
+        <button type="submit" class="button secondary">Logga ut</button>
+      </form>
+    </div>
+  </div>
+  <p class="status muted">
+    <% const run = checkStatus.lastRun; %>
+    <% if (checkStatus.running) { %>
+      Kontroll pågår…
+    <% } else if (!run) { %>
+      Ingen kontroll har körts sedan appen startade.
+    <% } else if (run.error) { %>
+      <span class="error-text">Senaste kontrollen (<%= format.time(run.finishedAt) %>) misslyckades: <%= run.error %></span>
+    <% } else { %>
+      Senaste kontroll <%= format.time(run.finishedAt) %>:
+      <%= run.result.watches %> bevakningar<% if (run.result.failed) { %>, <span class="error-text"><%= run.result.failed %> misslyckades</span><% } %>,
+      <%= run.result.products %> produkter, <%= run.result.changes %> förändringar.
+    <% } %>
+  </p>
+</header>
+
+<% if (flash) { %>
+  <p class="message <%= flash.type === 'error' ? 'error' : 'success' %>" role="status"><%= flash.message %></p>
+<% } %>
