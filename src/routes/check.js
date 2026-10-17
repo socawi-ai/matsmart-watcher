@@ -9,7 +9,7 @@ const { text } = require('../utils/input');
 const router = express.Router();
 
 // The pages the button is on; anything else goes back to the watchlist.
-const PAGES = ['/', '/products', '/history'];
+const PAGES = ['/', '/products', '/history', '/settings'];
 
 router.post('/', (req, res) => {
   const back = PAGES.includes(text((req.body || {}).back)) ? req.body.back : '/';

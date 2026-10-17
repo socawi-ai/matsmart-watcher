@@ -63,11 +63,25 @@ const oreFromKronor = (number) => Math.round(Number(number) * 100);
 // A product as the list API returns it: prices as kronor strings.
 function productFromApi(node) {
   const variation = onlyVariation(node);
+  const price = oreFromKronor(need(variation.resolved_price, 'resolved_price', node.id).number);
   return {
     ...productFields(node, variation),
-    price: oreFromKronor(need(variation.resolved_price, 'resolved_price', node.id).number),
-    originalPrice: oreFromKronor(need(variation.normal_price, 'normal_price', node.id).number)
+    price,
+    originalPrice: originalPriceFromApi(node, variation, price)
   };
+}
+
+// Usually normal_price. A few products have none (2 of 589 in
+// skafferi-api-*.json): on a sale (prices[0].sale_price) the price before
+// it is lowest_price_before_sale; otherwise there's no discount and the
+// site's product page shows the price itself as the old price.
+function originalPriceFromApi(node, variation, price) {
+  if (variation.normal_price) return oreFromKronor(variation.normal_price.number);
+  const offer = need(variation.prices, 'prices', node.id)[0];
+  if (offer.sale_price) {
+    return oreFromKronor(need(variation.lowest_price_before_sale, 'lowest_price_before_sale', node.id).number);
+  }
+  return price;
 }
 
 function exactlyOne(found, what) {

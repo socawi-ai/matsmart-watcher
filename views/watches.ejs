@@ -23,8 +23,8 @@
         </form>
         <p class="muted">
           En produkt-, kategori-, varumärkes- eller listsida (t.ex. /sista-chansen). Med ett nyckelord
-          bevakas bara produkter vars namn eller varumärke innehåller det. Produkterna från en ny
-          bevaknings första kontroll räknas inte som nya.
+          bevakas bara produkter vars namn eller varumärke innehåller det. Produkter som appen inte
+          sett förut skickas som nya, också vid en ny bevaknings första kontroll.
         </p>
       </section>
 
@@ -39,19 +39,35 @@
                 <tr><th>Sida</th><th>Nyckelord</th><th>Produkter</th><th>Senast kontrollerad</th><th></th></tr>
               </thead>
               <tbody>
+                <%# Each row's fields belong to its save form through the form attribute,
+                    so the row can also hold the delete form. %>
                 <% watches.forEach(function (watch) { %>
                   <tr>
-                    <td><a href="https://www.matsmart.se<%= watch.path %>" rel="noopener noreferrer" target="_blank"><%= watch.path %></a></td>
-                    <td><%= watch.keyword || '–' %></td>
+                    <td>
+                      <div class="cell-edit">
+                        <input type="text" name="url" form="watch-<%= watch.id %>" value="<%= watch.path %>" required
+                          maxlength="<%= limits.url %>" aria-label="Adress på matsmart.se" />
+                        <a href="https://www.matsmart.se<%= watch.path %>" rel="noopener noreferrer" target="_blank" title="Öppna på matsmart.se">↗</a>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="text" name="keyword" form="watch-<%= watch.id %>" value="<%= watch.keyword %>"
+                        maxlength="<%= limits.keyword %>" aria-label="Nyckelord" placeholder="–" />
+                    </td>
                     <td><%= watch.product_count %></td>
                     <td>
                       <%= watch.checked_at ? format.time(watch.checked_at) : 'Aldrig' %>
                       <% if (watch.error) { %><br /><span class="error-text">Fel: <%= watch.error %></span><% } %>
                     </td>
                     <td class="cell-end">
-                      <form method="post" action="/watches/<%= watch.id %>/delete">
-                        <button type="submit" class="button danger">Ta bort</button>
-                      </form>
+                      <div class="actions">
+                        <form method="post" action="/watches/<%= watch.id %>" id="watch-<%= watch.id %>">
+                          <button type="submit" class="button secondary">Spara</button>
+                        </form>
+                        <form method="post" action="/watches/<%= watch.id %>/delete">
+                          <button type="submit" class="button danger">Ta bort</button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 <% }) %>

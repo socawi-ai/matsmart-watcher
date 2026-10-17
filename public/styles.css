@@ -247,6 +247,21 @@ a:focus-visible {
   text-align: right;
 }
 
+.cell-end .actions {
+  justify-content: flex-end;
+}
+
+.cell-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 16rem;
+}
+
+.cell-edit a {
+  text-decoration: none;
+}
+
 .nowrap {
   white-space: nowrap;
 }
@@ -280,4 +295,30 @@ a:focus-visible {
 .tag-sold_out,
 .tag-price_up {
   background: var(--danger-soft);
+}
+
+/* Settings */
+
+.settings {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0;
+}
+
+.settings legend {
+  padding: 0 0.3rem;
+  font-weight: 600;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
 }

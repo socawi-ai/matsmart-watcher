@@ -11,7 +11,7 @@ process.env.SESSION_SECRET = 'test-secret';
 process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1/test';
 
 const { runCheck } = require('../src/check');
-const { createWatch, listWatches } = require('../src/db/watches');
+const { createWatch, deleteWatch, listWatches, updateWatch } = require('../src/db/watches');
 const { listInStockProducts } = require('../src/db/products');
 const { listRecentChanges } = require('../src/db/changes');
 
@@ -39,6 +39,7 @@ const scrapeWatch = async (watchPath) => {
 let sent = [];
 const notify = async (changes) => {
   sent.push(changes);
+  return changes.length;
 };
 const check = () => runCheck({ scrapeWatch, notify });
 const types = (changes) => changes.map((change) => `${change.type}:${change.product.id}`).sort();
@@ -47,14 +48,17 @@ test('checks find, store and report changes', async (t) => {
   await createWatch({ path: '/kategori/proteinbars', keyword: '' });
   await createWatch({ path: '/varumarke/gainomax', keyword: 'lakrits' });
 
-  await t.test('first check: products stored, nothing announced', async () => {
+  await t.test('first check: what the watches match is sent as new', async () => {
     site = {
       '/kategori/proteinbars': [product('a'), product('b')],
       '/varumarke/gainomax': [product('c', { title: 'Lakritsbar' }), product('d')]
     };
     const result = await check();
-    assert.deepEqual(result, { watches: 2, failed: 0, products: 3, changes: 0 });
-    assert.equal(sent.length, 0);
+    assert.deepEqual(result, { watches: 2, failed: 0, products: 3, changes: 3, sent: 3 });
+    assert.deepEqual(types(sent[0]), ['new:a', 'new:b', 'new:c']);
+    // Only first checks found them.
+    assert.ok(sent[0].every((change) => change.firstCheck));
+    sent = [];
     // The keyword left out "d".
     assert.deepEqual((await listInStockProducts('name')).map((p) => p.id).sort(), ['a', 'b', 'c']);
   });
@@ -68,10 +72,12 @@ test('checks find, store and report changes', async (t) => {
     assert.equal(result.changes, 4);
     assert.equal(sent.length, 1);
     assert.deepEqual(types(sent[0]), ['new:e', 'price_drop:a', 'price_up:c', 'sold_out:b']);
+    // "e" turned up in a watch that had been checked before.
+    assert.ok(sent[0].every((change) => !change.firstCheck));
     const drop = sent[0].find((change) => change.type === 'price_drop');
     assert.equal(drop.oldPrice, 1000);
     assert.equal(drop.newPrice, 800);
-    assert.deepEqual(types((await listRecentChanges(10)).map((row) => ({ type: row.type, product: { id: row.product_id } }))), [
+    assert.deepEqual(types((await listRecentChanges(4)).map((row) => ({ type: row.type, product: { id: row.product_id } }))), [
       'new:e',
       'price_drop:a',
       'price_up:c',
@@ -130,5 +136,41 @@ test('checks find, store and report changes', async (t) => {
     site['/produkt/f'] = [];
     await check();
     assert.deepEqual(types(sent[0]), ['sold_out:f']);
+  });
+
+  await t.test('editing a watch: what it found before is not sold out, products seen before are not new', async () => {
+    const watch = (await listWatches()).find((w) => w.path === '/varumarke/gainomax');
+    await updateWatch(watch.id, { path: '/varumarke/gainomax', keyword: '' });
+    const edited = (await listWatches()).find((w) => w.id === watch.id);
+    assert.equal(edited.checked_at, null);
+    assert.equal(edited.product_count, 0);
+    sent = [];
+    // "c" (seen before, unchanged price) isn't announced again; "g" (never
+    // seen) is new.
+    site['/varumarke/gainomax'] = [product('c', { title: 'Lakritsbar', price: 1200 }), product('g')];
+    await check();
+    assert.deepEqual(types(sent[0]), ['new:g']);
+    assert.equal((await listWatches()).find((w) => w.id === watch.id).product_count, 2);
+  });
+
+  await t.test('a watch removed or edited while a check runs: its results are dropped', async () => {
+    const watches = await listWatches();
+    const removed = watches.find((w) => w.path === '/produkt/f');
+    const edited = watches.find((w) => w.path === '/varumarke/gainomax');
+    site['/produkt/f'] = async () => {
+      await deleteWatch(removed.id);
+      return [product('f', { price: 1 })];
+    };
+    site['/varumarke/gainomax'] = async () => {
+      await updateWatch(edited.id, { path: '/varumarke/gainomax', keyword: 'nothing' });
+      return [product('h')];
+    };
+    sent = [];
+    const result = await check();
+    assert.equal(sent.length, 0);
+    assert.equal(result.changes, 0);
+    const after = (await listWatches()).find((w) => w.id === edited.id);
+    assert.equal(after.checked_at, null);
+    assert.equal(after.product_count, 0);
   });
 });

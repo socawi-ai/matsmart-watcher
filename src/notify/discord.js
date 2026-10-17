@@ -44,16 +44,41 @@ function buildMessage(changes) {
   };
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function failure(res) {
+  return new Error(`Discord svarade ${res.status}: ${(await res.text()).slice(0, 300)}`);
+}
+
+// Sends the message and returns its id. wait=true makes Discord answer with
+// the message, which is the only way to learn the id (needed to delete it).
 async function sendMessage(webhookUrl, message) {
-  const res = await fetch(webhookUrl, {
+  const url = new URL(webhookUrl);
+  url.searchParams.set('wait', 'true');
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(message),
     signal: AbortSignal.timeout(30000)
   });
-  if (!res.ok) {
-    throw new Error(`Discord svarade ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw await failure(res);
+  return (await res.json()).id;
+}
+
+// Deletes a message the webhook sent. Returns 'deleted', or 'gone' when
+// Discord doesn't know it (deleted by hand, or sent through another
+// webhook). When rate limited, waits as long as Discord asks and tries again.
+async function deleteMessage(webhookUrl, messageId) {
+  const url = new URL(webhookUrl);
+  url.pathname += `/messages/${encodeURIComponent(messageId)}`;
+  for (;;) {
+    const res = await fetch(url, { method: 'DELETE', signal: AbortSignal.timeout(30000) });
+    if (res.status === 204) return 'deleted';
+    if (res.status === 404) return 'gone';
+    if (res.status !== 429) throw await failure(res);
+    const { retry_after: retryAfter } = await res.json();
+    await sleep(Math.ceil(retryAfter * 1000));
   }
 }
 
-module.exports = { MAX_EMBEDS, buildMessage, sendMessage };
+module.exports = { MAX_EMBEDS, buildMessage, deleteMessage, sendMessage };

@@ -97,6 +97,13 @@ Verified in Phase 1 (2026-10-17):
   `normal_price.number`, strings in kronor (`"149.000000"`); its `prices[0].list_price`
   is always null. Matched on 18 of 18 products (`category-api-page1.json`).
   No discount field: compute it from the two prices.
+- **API `normal_price` can be null** (2 of 589 in `/kategori/skafferi`, both
+  `purchase_reason_name` "SavedBestBeforeDate"; `skafferi-api-10.json`, `-30.json`).
+  Without a sale (`prices[0].sale_price` false) the product page shows old price =
+  price (`product-no-normal-price-1.html`), so original = price. On a sale, the
+  owner chose original = `lowest_price_before_sale` (Mirin: 28 kr, before 39).
+  Mirin's product page still showed 39/39 while the API said 28 (re-fetched:
+  `skafferi-api-30-again.json`); likely a cached page, unverified.
 - `stock` is capped at 101 (38 of 53), read as "more than 100".
 - "Snart slutsåld" (site text: expected to sell out within two days) is not a field.
   It correlates with `days_left_in_stock` ≤ ~3; not used by the watcher.
@@ -124,9 +131,22 @@ Verified in Phase 1 (2026-10-17):
 - Diffing: `src/diff.js` (pure). Storage: `src/db/{watches,products,changes}.js`.
 - `src/check.js` (`runCheck({ scrapeWatch, notify })`): scrape every watch, filter
   by keyword, diff and store in one transaction, notify once. A failed watch keeps
-  its error on the row and its products aren't called sold out. A watch's first
-  successful check records without announcing `new`.
+  its error on the row and its products aren't called sold out. `new` means the
+  watcher has never seen the product (any watch), also on a watch's first check
+  (owner's choice, 2026-10-17). Editing a watch's page or keyword clears what it
+  found, so those products aren't reported sold out.
 - `src/notify/discord.js`: one message, max 10 embeds, the rest noted.
+- `src/notify/settings.js`: what's sent, set on `/settings` and stored in the
+  `settings` key/value table (migration 2, `src/db/settings.js`): change types,
+  `firstCheck` (send `new` that only watches' first checks found; `check.js`
+  marks those changes `firstCheck`), `paused`. Defaults: send everything.
+  `changesToSend` filters; everything is recorded regardless.
+- Sent messages: `sendMessage` posts with `?wait=true` to get the message id, stored
+  in `discord_messages` (migration 3). `deleteSentMessages`
+  (`src/notify/sent-messages.js`) deletes them one by one through the webhook
+  (`DELETE …/messages/<id>`: 204 deleted, 404 already gone, 429 wait
+  `retry_after`), forgetting each as it goes. A webhook can't list or delete
+  messages it didn't send, so messages from before 2026-10-17 can't be removed.
 - `src/scheduler.js`: `checkNow()` (no overlap), status shown on every page.
 - Web: `src/app.js` (headers, CSP with `productimages.motatos.com`, session,
   `requireAuth` on everything but `/auth` and `/health`), routes in `src/routes/`,

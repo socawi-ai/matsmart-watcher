@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+<%- include('partials/head', { title: 'Inställningar' }) %>
+  </head>
+  <body>
+    <main class="page">
+<%- include('partials/top') %>
+
+      <section class="card">
+        <h2>Notiser till Discord</h2>
+        <p class="muted">Alla förändringar sparas under Historik. Här väljer du vilka som skickas till Discord.</p>
+
+        <form method="post" action="/settings" class="settings">
+          <fieldset>
+            <legend>Skicka</legend>
+            <% changeTypes.forEach(function (type) { %>
+              <label class="check">
+                <input type="checkbox" name="types" value="<%= type %>" <%= settings.types.includes(type) ? 'checked' : '' %> />
+                <span class="tag tag-<%= type %>"><%= labels[type] %></span>
+              </label>
+            <% }) %>
+          </fieldset>
+
+          <fieldset>
+            <legend>Nya bevakningar</legend>
+            <label class="check">
+              <input type="checkbox" name="firstCheck" value="1" <%= settings.firstCheck ? 'checked' : '' %> />
+              Skicka vad en ny eller ändrad bevakning hittar vid sin första kontroll
+            </label>
+            <p class="muted">
+              Av: produkter som bara en bevaknings första kontroll hittar skickas inte som nya (de syns
+              ändå under Historik). Prisändringar, slutsålt och tillbaka i lager skickas som vanligt.
+            </p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Paus</legend>
+            <label class="check">
+              <input type="checkbox" name="paused" value="1" <%= settings.paused ? 'checked' : '' %> />
+              Pausa alla notiser
+            </label>
+            <p class="muted">
+              Kontrollerna fortsätter och sparar förändringarna, men inget skickas. Det som hände under
+              pausen skickas inte efteråt.
+            </p>
+          </fieldset>
+
+          <div>
+            <button type="submit" class="button">Spara</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="skickade">
+        <h2>Skickade notiser</h2>
+        <p class="muted">
+          Appen kan ta bort meddelandena den har skickat till Discord, genom samma webhook. Det gäller
+          meddelanden skickade efter att funktionen kom till (<%= sentMessages %> nu). Äldre meddelanden,
+          och sådana skickade genom en annan webhook, tar du bort i Discord. Historik påverkas inte.
+        </p>
+        <% if (sentMessages) { %>
+          <form method="post" action="/settings/discord-messages/delete" class="actions">
+            <label class="check">
+              <input type="checkbox" name="confirm" value="1" required />
+              Ja, ta bort
+            </label>
+            <button type="submit" class="button danger">Ta bort alla <%= sentMessages %> skickade notiser</button>
+          </form>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

@@ -82,6 +82,26 @@ test('all of /sista-chansen: 154 products, multipacks included', () => {
   assert.ok(products.some((p) => p.bestBefore === null));
 });
 
+// 2 of 589 products in /kategori/skafferi had no normal_price (2026-10-17).
+test('API product without normal_price and without a sale: no discount', () => {
+  const satay = parseApiPage(evidence('skafferi-api-10.json')).products.find(
+    (p) => p.id === '3265bd56-9398-4301-b52d-64e0d40b7833'
+  );
+  assert.equal(satay.price, 3200);
+  assert.equal(satay.originalPrice, 3200);
+  // The site's product page shows the same: old price = price.
+  const fromPage = parseProductPage(evidence('product-no-normal-price-1.html'));
+  assert.equal(fromPage.originalPrice, fromPage.price);
+});
+
+test('API product without normal_price on a sale: the price before the sale', () => {
+  const mirin = parseApiPage(evidence('skafferi-api-30.json')).products.find(
+    (p) => p.id === '5b69990c-b51a-4d4d-8e4c-710cd82728f2'
+  );
+  assert.equal(mirin.price, 2800);
+  assert.equal(mirin.originalPrice, 3900);
+});
+
 test('API and product page agree on prices (same product)', () => {
   const fromApi = parseApiPage(evidence('category-api-page1.json')).products.find(
     (p) => p.id === '68f207fe-2bdf-4c7c-8a60-a4873be28a66'

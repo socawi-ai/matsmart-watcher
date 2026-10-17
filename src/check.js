@@ -3,7 +3,7 @@
 const { matchesKeyword } = require('./matsmart');
 const { productChange, vanishedProductIds } = require('./diff');
 const { inTransaction } = require('./db/transaction');
-const { listWatchProductIds, listWatches, saveWatchError, saveWatchSuccess } = require('./db/watches');
+const { isUnchanged, listWatchProductIds, listWatches, saveWatchError, saveWatchSuccess } = require('./db/watches');
 const { mapAllProducts, markSoldOut, saveProduct } = require('./db/products');
 const { insertChange } = require('./db/changes');
 
@@ -24,20 +24,25 @@ async function scrapeAll(watches, scrapeWatch) {
 }
 
 // Diffs and stores the results in one transaction; returns the changes.
-// A watch's first successful check only records what it found: its
-// products aren't announced as new, so adding a big list doesn't flood
-// Discord.
-function storeResults(results) {
+// Results of watches removed or edited while the check ran are dropped:
+// they describe a watch that no longer exists.
+function storeResults(allResults) {
   const now = new Date().toISOString();
   return inTransaction(async (db) => {
+    const results = [];
+    for (const result of allResults) {
+      if (await isUnchanged(db, result.watch)) results.push(result);
+    }
     const stored = await mapAllProducts(db);
     const linked = await listWatchProductIds(db);
     const found = new Map();
-    const announceNew = new Set();
+    // Products a watch found that had been checked before: the rest only
+    // turned up in watches' first checks.
+    const foundByCheckedWatch = new Set();
     for (const { watch, products } of results.filter((result) => !result.error)) {
       for (const product of products) {
         found.set(product.id, product);
-        if (watch.checked_at) announceNew.add(product.id);
+        if (watch.checked_at) foundByCheckedWatch.add(product.id);
       }
     }
 
@@ -46,8 +51,9 @@ function storeResults(results) {
       const before = stored.get(product.id);
       const type = productChange(before, product);
       await saveProduct(db, product, now);
-      if (type && (type !== 'new' || announceNew.has(product.id))) {
-        changes.push({ type, product, oldPrice: before ? before.price : null, newPrice: product.price });
+      if (type) {
+        const firstCheck = type === 'new' && !foundByCheckedWatch.has(product.id);
+        changes.push({ type, product, oldPrice: before ? before.price : null, newPrice: product.price, firstCheck });
       }
     }
 
@@ -55,30 +61,32 @@ function storeResults(results) {
     for (const id of vanishedProductIds(stored, linked, new Set(found.keys()), failedIds)) {
       const product = { ...stored.get(id), inStock: false };
       await markSoldOut(db, id, now);
-      changes.push({ type: 'sold_out', product, oldPrice: null, newPrice: product.price });
+      changes.push({ type: 'sold_out', product, oldPrice: null, newPrice: product.price, firstCheck: false });
     }
 
     for (const change of changes) await insertChange(db, change, now);
     for (const { watch, products, error } of results) {
-      if (error) await saveWatchError(db, watch.id, error);
-      else await saveWatchSuccess(db, watch.id, products.map((product) => product.id), now);
+      if (error) await saveWatchError(db, watch, error);
+      else await saveWatchSuccess(db, watch, products.map((product) => product.id), now);
     }
     return changes;
   });
 }
 
-// { watches, failed, products, changes } for the check that just ran.
-// scrapeWatch(path) → products, notify(changes) sends them.
+// { watches, failed, products, changes, sent } for the check that just ran.
+// scrapeWatch(path) → products; notify(changes) sends what the settings
+// allow and returns how many it sent.
 async function runCheck({ scrapeWatch, notify }) {
   const watches = await listWatches();
   const results = await scrapeAll(watches, scrapeWatch);
   const changes = await storeResults(results);
-  if (changes.length) await notify(changes);
+  const sent = changes.length ? await notify(changes) : 0;
   return {
     watches: watches.length,
     failed: results.filter((result) => result.error).length,
     products: results.reduce((sum, result) => sum + (result.products ? result.products.length : 0), 0),
-    changes: changes.length
+    changes: changes.length,
+    sent
   };
 }
 

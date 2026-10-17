@@ -64,6 +64,28 @@ const MIGRATIONS = [
         );
         CREATE INDEX changes_by_time ON changes (created_at DESC, id DESC);
       `)
+  },
+  {
+    name: 'Inställningar',
+    up: (db) =>
+      db.exec(`
+        CREATE TABLE settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      `)
+  },
+  {
+    name: 'Skickade Discord-meddelanden',
+    up: (db) =>
+      db.exec(`
+        -- Messages sent through the webhook, so they can be deleted again.
+        CREATE TABLE discord_messages (
+          id TEXT PRIMARY KEY,
+          sent_at TEXT NOT NULL
+        )
+      `)
   }
 ];
 

@@ -1,5 +1,6 @@
 // The watchlist: matsmart.se pages to check, with an optional keyword.
 const { getDb } = require('./index');
+const { inTransaction } = require('./transaction');
 
 // Every watch with how many products its last check found, oldest first.
 async function listWatches() {
@@ -34,18 +35,37 @@ async function deleteWatch(id) {
   await db.run('DELETE FROM watches WHERE id = ?', id);
 }
 
-// The outcome of checking one watch, inside a check's transaction:
-// productIds replaces what the watch found last time.
-async function saveWatchSuccess(db, watchId, productIds, checkedAt) {
-  await db.run('DELETE FROM watch_products WHERE watch_id = ?', watchId);
-  for (const productId of productIds) {
-    await db.run('INSERT INTO watch_products (watch_id, product_id) VALUES (?, ?)', watchId, productId);
-  }
-  await db.run('UPDATE watches SET checked_at = ?, error = NULL WHERE id = ?', checkedAt, watchId);
+// A new page or keyword: the watch starts over, as if just added. What it
+// found before no longer applies, so it can't be reported as sold out.
+// Returns false when another watch already has the same page and keyword.
+function updateWatch(id, { path, keyword }) {
+  return inTransaction(async (db) => {
+    const taken = await db.get('SELECT 1 FROM watches WHERE path = ? AND keyword = ? AND id <> ?', path, keyword, id);
+    if (taken) return false;
+    await db.run('DELETE FROM watch_products WHERE watch_id = ?', id);
+    await db.run('UPDATE watches SET path = ?, keyword = ?, checked_at = NULL, error = NULL WHERE id = ?', path, keyword, id);
+    return true;
+  });
 }
 
-async function saveWatchError(db, watchId, error) {
-  await db.run('UPDATE watches SET error = ? WHERE id = ?', error, watchId);
+// Whether the watch still exists with the page and keyword a check used:
+// it may have been removed or edited while the check ran.
+async function isUnchanged(db, watch) {
+  return Boolean(await db.get('SELECT 1 FROM watches WHERE id = ? AND path = ? AND keyword = ?', watch.id, watch.path, watch.keyword));
+}
+
+// The outcome of checking one watch, inside a check's transaction:
+// productIds replaces what the watch found last time.
+async function saveWatchSuccess(db, watch, productIds, checkedAt) {
+  await db.run('DELETE FROM watch_products WHERE watch_id = ?', watch.id);
+  for (const productId of productIds) {
+    await db.run('INSERT INTO watch_products (watch_id, product_id) VALUES (?, ?)', watch.id, productId);
+  }
+  await db.run('UPDATE watches SET checked_at = ?, error = NULL WHERE id = ?', checkedAt, watch.id);
+}
+
+async function saveWatchError(db, watch, error) {
+  await db.run('UPDATE watches SET error = ? WHERE id = ?', error, watch.id);
 }
 
 // { watchId: [productId, …] } for every watch, from the last checks.
@@ -63,8 +83,10 @@ module.exports = {
   createWatch,
   deleteWatch,
   findWatchById,
+  isUnchanged,
   listWatchProductIds,
   listWatches,
   saveWatchError,
-  saveWatchSuccess
+  saveWatchSuccess,
+  updateWatch
 };

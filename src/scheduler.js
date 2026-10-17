@@ -4,8 +4,18 @@ const { config } = require('./config');
 const { runCheck } = require('./check');
 const { scrapeWatch } = require('./scraper/source');
 const { buildMessage, sendMessage } = require('./notify/discord');
+const { changesToSend, getNotifySettings } = require('./notify/settings');
+const { saveDiscordMessage } = require('./db/discord-messages');
 
-const notify = (changes) => sendMessage(config.discordWebhookUrl, buildMessage(changes));
+// Sends what the notification settings allow, and remembers the message so
+// it can be deleted from Inställningar; returns how many changes it sent.
+async function notify(changes) {
+  const toSend = changesToSend(changes, await getNotifySettings());
+  if (toSend.length) {
+    await saveDiscordMessage(await sendMessage(config.discordWebhookUrl, buildMessage(toSend)));
+  }
+  return toSend.length;
+}
 
 let running = false;
 // { startedAt, finishedAt, result } or { startedAt, finishedAt, error }
@@ -22,7 +32,7 @@ function checkNow() {
       lastRun = { startedAt, finishedAt: new Date().toISOString(), result };
       console.log(
         `Kontroll klar: ${result.watches} bevakningar (${result.failed} misslyckades), ` +
-          `${result.products} produkter, ${result.changes} förändringar.`
+          `${result.products} produkter, ${result.changes} förändringar, ${result.sent} skickade till Discord.`
       );
     })
     .catch((err) => {

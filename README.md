@@ -14,9 +14,9 @@ Discord when something changes. One Docker container, one SQLite file.
   time with a 2-second pause between them, and gets every product on a list,
   not just the first screenful.
 - **Changes** found: `new` (Ny), `back_in_stock` (Tillbaka i lager), `sold_out`
-  (Slutsåld), `price_drop` (Prissänkning) and `price_up` (Prishöjning). A
-  watch's first check only records what it found, so adding a big list doesn't
-  flood you with "new" products.
+  (Slutsåld), `price_drop` (Prissänkning) and `price_up` (Prishöjning). "Ny" is a
+  product the app has never seen before, so a new watch's first check sends what
+  it matches (a big list too: the first 10 in the message, the rest under Historik).
 - **Discord**: one message per check that found changes, with one embed per change
   (name, price old → new, original price and discount, best-before date, stock,
   link, picture). Discord takes 10 embeds per message; the rest are under Historik.
@@ -25,6 +25,11 @@ Discord when something changes. One Docker container, one SQLite file.
   - **Produkter**: everything in stock across all watches, sortable by discount,
     price, best-before date or name.
   - **Historik**: the latest 200 changes.
+  - **Inställningar**: which changes are sent to Discord (per type), whether a
+    new or edited watch's first check sends what it finds, and a pause switch.
+    Every change is still recorded under Historik. **Ta bort alla skickade
+    notiser** deletes every message the app has sent to Discord (through the
+    current webhook); it doesn't touch Historik.
 
 ## Run with Docker
 

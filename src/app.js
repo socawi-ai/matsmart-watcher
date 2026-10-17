@@ -8,12 +8,14 @@ const watchesRouter = require('./routes/watches');
 const productsRouter = require('./routes/products');
 const historyRouter = require('./routes/history');
 const checkRouter = require('./routes/check');
+const settingsRouter = require('./routes/settings');
 const { takeFlash } = require('./routes/flash');
 const { attachUser, requireAuth } = require('./middleware/auth');
 const SQLiteSessionStore = require('./db/session-store');
 const { APP_NAME, SESSION_COOKIE, config } = require('./config');
 const { checkStatus } = require('./scheduler');
 const format = require('./format');
+const { getNotifySettings } = require('./notify/settings');
 
 // Where the products page loads its thumbnails from.
 const PRODUCT_IMAGES_ORIGIN = 'https://productimages.motatos.com';
@@ -97,17 +99,19 @@ app.use('/auth', authRouter);
 
 // Everything else needs a login. The pages show private data: keep them out
 // of browser caches. Each page shows the last form's outcome once, and how
-// the checks are going.
-app.use(requireAuth, (req, res, next) => {
+// the checks are going, and whether notifications are paused.
+app.use(requireAuth, async (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'GET') res.locals.flash = takeFlash(req);
   res.locals.checkStatus = checkStatus();
+  res.locals.notifyPaused = (await getNotifySettings()).paused;
   next();
 });
 app.use('/', watchesRouter);
 app.use('/products', productsRouter);
 app.use('/history', historyRouter);
 app.use('/check', checkRouter);
+app.use('/settings', settingsRouter);
 
 app.use((req, res) => {
   res.status(404).send('Sidan finns inte.');

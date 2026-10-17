@@ -6,6 +6,7 @@
       <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Bevakningar</a>
       <a href="/products" class="<%= currentPath === '/products' ? 'active' : '' %>">Produkter</a>
       <a href="/history" class="<%= currentPath === '/history' ? 'active' : '' %>">Historik</a>
+      <a href="/settings" class="<%= currentPath === '/settings' ? 'active' : '' %>">Inställningar</a>
     </nav>
     <div class="actions">
       <form method="post" action="/check">
@@ -17,6 +18,9 @@
       </form>
     </div>
   </div>
+  <% if (notifyPaused) { %>
+    <p class="message error">Notiserna till Discord är pausade (<a href="/settings">Inställningar</a>).</p>
+  <% } %>
   <p class="status muted">
     <% const run = checkStatus.lastRun; %>
     <% if (checkStatus.running) { %>
@@ -28,7 +32,7 @@
     <% } else { %>
       Senaste kontroll <%= format.time(run.finishedAt) %>:
       <%= run.result.watches %> bevakningar<% if (run.result.failed) { %>, <span class="error-text"><%= run.result.failed %> misslyckades</span><% } %>,
-      <%= run.result.products %> produkter, <%= run.result.changes %> förändringar.
+      <%= run.result.products %> produkter, <%= run.result.changes %> förändringar, <%= run.result.sent %> skickade till Discord.
     <% } %>
   </p>
 </header>
