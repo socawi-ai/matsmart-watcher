@@ -47,7 +47,8 @@ Agreed after Phase 0 (2026-10-17):
   small cms, without its release/changelog steps) builds, smoke-tests, Trivy-scans
   and publishes `ghcr.io/socawi-ai/matsmart-watcher` on pushes to `main` (`latest`,
   `sha-…`) and `v*` tags; compose pulls that image (owner's request, 2026-10-17).
-  The repo is private, so pulling needs `docker login ghcr.io`.
+  The repo is public (2026-10-17); the image's visibility is set separately on
+  GHCR, and a private image needs `docker login ghcr.io` to pull.
 
 ## Responsibilities (keep these separate)
 - Fetching pages (HTTP only)

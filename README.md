@@ -35,8 +35,9 @@ Discord when something changes. One Docker container, one SQLite file.
 
 Every push to `main` builds the image on GitHub and publishes it as
 `ghcr.io/socawi-ai/matsmart-watcher:latest`; a `v*` tag (e.g. `v0.2.0`) also
-publishes that version. The repository is private, so the image is too: log in
-once on each Docker server with a GitHub token that has `read:packages`:
+publishes that version. The image's visibility is set separately from the
+repository's (GitHub → the package → Package settings). While it's private, log
+in once on each Docker server with a GitHub token that has `read:packages`:
 
 ```bash
 echo <token> | docker login ghcr.io -u socawi-ai --password-stdin
